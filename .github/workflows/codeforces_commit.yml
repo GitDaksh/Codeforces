@@ -7,10 +7,14 @@ on:
 jobs:
   fetch-and-commit:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-        
+        with:
+          persist-credentials: false
+          
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -36,7 +40,7 @@ jobs:
           for attempt in range(MAX_RETRIES):
               try:
                   response = requests.get(API_URL)
-                  response.raise_for_status()  # Raise an error for bad status codes
+                  response.raise_for_status()
                   data = response.json()
                   if data["status"] == "OK":
                       break
@@ -44,9 +48,8 @@ jobs:
                   if attempt == MAX_RETRIES - 1:
                       print(f"Error fetching Codeforces data: {e}")
                       exit(1)
-                  time.sleep(2 ** attempt)  # Exponential backoff
+                  time.sleep(2 ** attempt)
           
-          # Read stored submissions to avoid duplicates
           history_file = "submission_history.json"
           if os.path.exists(history_file):
               with open(history_file, "r") as f:
@@ -66,11 +69,9 @@ jobs:
               print("No new accepted solutions")
               exit(0)
           
-          # Save updated history
           with open(history_file, "w") as f:
               json.dump(submitted_problems, f, indent=4)
           
-          # Save problem IDs and timestamps
           log_file = "submissions/log.txt"
           os.makedirs("submissions", exist_ok=True)
           with open(log_file, "a") as f:
@@ -80,11 +81,8 @@ jobs:
           print(f"Logged {len(new_submissions)} new solved problems.")
         shell: python
         
-      - name: Commit and push changes
-        run: |
-          git config --global user.name "GitDaksh"
-          git config --global user.email "daksh.java.util@gmail.com"
-          git add .
-          git commit -m "Auto-commit Codeforces submissions $(date)" || exit 0
-          git remote set-url origin https://${{ secrets.GH_TOKEN }}@github.com/GitDaksh/Codeforces.git
-          git push
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GH_TOKEN }}
+          branch: main
