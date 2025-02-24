@@ -1,0 +1,86 @@
+name: Codeforces Auto-Commit
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"  # Runs every 15 minutes
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  fetch-and-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Fetch recent Codeforces submissions
+        run: |
+          import requests
+          import json
+          import os
+          from datetime import datetime
+
+          # Your Codeforces handle
+          HANDLE = "dummyDax"
+          API_URL = f"https://codeforces.com/api/user.status?handle={HANDLE}&from=1&count=5"
+
+          # Fetch submissions
+          response = requests.get(API_URL)
+          data = response.json()
+
+          if data["status"] != "OK":
+              print("Error fetching Codeforces data")
+              exit(1)
+
+          # Read stored submissions to avoid duplicates
+          history_file = "submission_history.json"
+          if os.path.exists(history_file):
+              with open(history_file, "r") as f:
+                  submitted_problems = json.load(f)
+          else:
+              submitted_problems = []
+
+          new_submissions = []
+          for submission in data["result"]:
+              if submission["verdict"] == "OK":
+                  problem_id = f"{submission['problem']['contestId']}_{submission['problem']['index']}"
+                  if problem_id not in submitted_problems:
+                      new_submissions.append(submission)
+                      submitted_problems.append(problem_id)
+
+          if not new_submissions:
+              print("No new accepted solutions")
+              exit(0)
+
+          # Save updated history
+          with open(history_file, "w") as f:
+              json.dump(submitted_problems, f)
+
+          # Save solutions as files
+          for submission in new_submissions:
+              problem_id = f"{submission['problem']['contestId']}_{submission['problem']['index']}"
+              filename = f"submissions/{problem_id}.cpp"
+              os.makedirs(os.path.dirname(filename), exist_ok=True)
+              
+              with open(filename, "w") as f:
+                  f.write(submission["programmingLanguage"] + "\n\n")
+                  f.write(submission["source"])
+
+          print(f"Saved {len(new_submissions)} new solutions.")
+
+        shell: python
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add .
+          git commit -m "Auto-commit Codeforces submissions $(date)" || exit 0
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
