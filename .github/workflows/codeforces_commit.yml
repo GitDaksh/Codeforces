@@ -2,8 +2,8 @@ name: Codeforces Auto-Commit
 
 on:
   schedule:
-    - cron: "*/15 * * * *"  # Runs every 15 minutes
-  workflow_dispatch:  # Allows manual trigger
+    - cron: "*/15 * * * *"  
+  workflow_dispatch:  
 
 jobs:
   fetch-and-commit:
@@ -17,6 +17,9 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
+
+      - name: Install dependencies  
+        run: pip install requests
 
       - name: Fetch recent Codeforces submissions
         run: |
