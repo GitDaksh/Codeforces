@@ -81,7 +81,3 @@ This project is **open-source** under the **MIT License**.
 ---
 
 🚀 **Happy Coding!** 💻🔥  
-
----
-
-This **README** is structured, visually appealing, and easy to understand. Let me know if you want any modifications! 😊
