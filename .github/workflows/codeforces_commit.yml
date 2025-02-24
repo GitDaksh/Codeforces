@@ -2,8 +2,8 @@ name: Codeforces Auto-Commit
 
 on:
   schedule:
-    - cron: "*/15 * * * *"  
-  workflow_dispatch:  
+    - cron: "*/15 * * * *"  # Runs every 15 minutes
+  workflow_dispatch:  # Allows manual trigger
 
 jobs:
   fetch-and-commit:
@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install dependencies  
+      - name: Install dependencies  # ✅ Install missing requests package
         run: pip install requests
 
       - name: Fetch recent Codeforces submissions
@@ -69,10 +69,14 @@ jobs:
               problem_id = f"{submission['problem']['contestId']}_{submission['problem']['index']}"
               filename = f"submissions/{problem_id}.cpp"
               os.makedirs(os.path.dirname(filename), exist_ok=True)
-              
-              with open(filename, "w") as f:
-                  f.write(submission["programmingLanguage"] + "\n\n")
-                  f.write(submission["source"])
+
+              # ✅ Fix: Check if 'source' exists before writing
+              if "source" in submission:
+                  with open(filename, "w") as f:
+                      f.write(submission["programmingLanguage"] + "\n\n")
+                      f.write(submission["source"])
+              else:
+                  print(f"Warning: No source code found for {problem_id}, skipping...")
 
           print(f"Saved {len(new_submissions)} new solutions.")
 
