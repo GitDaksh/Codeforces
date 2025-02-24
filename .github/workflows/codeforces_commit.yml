@@ -53,7 +53,7 @@ jobs:
               if submission["verdict"] == "OK":
                   problem_id = f"{submission['problem']['contestId']}_{submission['problem']['index']}"
                   if problem_id not in submitted_problems:
-                      new_submissions.append(submission)
+                      new_submissions.append(problem_id)
                       submitted_problems.append(problem_id)
 
           if not new_submissions:
@@ -62,23 +62,17 @@ jobs:
 
           # Save updated history
           with open(history_file, "w") as f:
-              json.dump(submitted_problems, f)
+              json.dump(submitted_problems, f, indent=4)
 
-          # Save solutions as files
-          for submission in new_submissions:
-              problem_id = f"{submission['problem']['contestId']}_{submission['problem']['index']}"
-              filename = f"submissions/{problem_id}.cpp"
-              os.makedirs(os.path.dirname(filename), exist_ok=True)
+          # ✅ Save problem IDs instead of source code (since CF API doesn't return source)
+          log_file = "submissions/log.txt"
+          os.makedirs("submissions", exist_ok=True)
 
-              # ✅ Fix: Check if 'source' exists before writing
-              if "source" in submission:
-                  with open(filename, "w") as f:
-                      f.write(submission["programmingLanguage"] + "\n\n")
-                      f.write(submission["source"])
-              else:
-                  print(f"Warning: No source code found for {problem_id}, skipping...")
+          with open(log_file, "a") as f:
+              for problem_id in new_submissions:
+                  f.write(f"{problem_id} - Solved on {datetime.now()}\n")
 
-          print(f"Saved {len(new_submissions)} new solutions.")
+          print(f"Logged {len(new_submissions)} new solved problems.")
 
         shell: python
 
