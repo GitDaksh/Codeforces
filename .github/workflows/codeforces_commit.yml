@@ -12,6 +12,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history
+          token: ${{ secrets.GH_TOKEN }}
         
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -203,16 +206,21 @@ jobs:
         run: |
           git status
           if [[ -n "$(git status --porcelain)" ]]; then
-            echo "::set-output name=changes::true"
+            echo "changes=true" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=changes::false"
+            echo "changes=false" >> $GITHUB_OUTPUT
           fi
         
-      - name: Commit and push if changes exist
+      - name: Pull latest changes
         if: steps.check_changes.outputs.changes == 'true'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          git pull --rebase
+        
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
           git add -A
           git commit -m "🚀 Added new Codeforces solutions"
           git push
